@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema Hospitalar</title>
+    <link rel="stylesheet" href="stylelogin.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="hospital-icon">
+            <span class="icon">🏥</span>
+            <div class="hospital-name">Sistema Hospitalar</div>
+            <div class="hospital-subtitle">Gerenciamento de Problemas</div>
+        </div>
+
+        <div class="error-message" id="errorMessage">
+            Usuário ou senha incorretos!
+        </div>
+
+        <div class="success-message" id="successMessage">
+            Login realizado com sucesso! Redirecionando...
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="usuario">Usuário</label>
+                <input type="text" id="usuario" name="usuario" required placeholder="Digite seu usuário">
+                <span class="input-icon">👤</span>
+            </div>
+
+            <div class="form-group">
+                <label for="senha">Senha</label>
+                <input type="password" id="senha" name="senha" required placeholder="Digite sua senha">
+                <span class="input-icon">🔒</span>
+            </div>
+
+            <div class="remember-forgot">
+                <label class="remember-me">
+                    <input type="checkbox" id="lembrar">
+                    Lembrar-me
+                </label>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                Entrar
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Verificando credenciais...</p>
+            </div>
+        </form>
+
+        <div class="login-footer">
+            <p>© Desenvolvido Por CRIALUX</p>
+        </div>
+    </div>
+
+    <script>
+        const credenciais = {
+            'Enfermeiro': 'enf123',
+            'Medico': 'med123',
+            'Suporte': 'sup123',
+            'Gerente': 'ger123'
+        };
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const usuario = document.getElementById('usuario').value.trim();
+            const senha = document.getElementById('senha').value;
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            const loading = document.getElementById('loading');
+            const loginBtn = document.getElementById('loginBtn');
+
+            // Limpar mensagens anteriores
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            // Validação básica
+            if (!usuario || !senha) {
+                mostrarErro('Por favor, preencha todos os campos.');
+                return;
+            }
+
+            // Mostrar loading
+            loading.style.display = 'block';
+            loginBtn.style.display = 'none';
+
+            // Simular delay de verificação (opcional)
+            setTimeout(() => {
+                // Verificar credenciais
+                if (credenciais[usuario] && credenciais[usuario] === senha) {
+                    // Login bem-sucedido
+                    successMsg.style.display = 'block';
+                    
+                    // Salvar sessão
+                    sessionStorage.setItem('usuarioLogado', usuario);
+                    sessionStorage.setItem('loginTime', new Date().toISOString());
+                    
+                    // Lembrar usuário se checkbox marcada
+                    if (document.getElementById('lembrar').checked) {
+                        localStorage.setItem('usuarioSalvo', usuario);
+                    }
+
+                    // Redirecionar após 2 segundos
+                    setTimeout(() => {
+                        window.location.href = "home.html";
+                    }, 2000);
+                    
+                } else {
+                    // Login falhou
+                    loading.style.display = 'none';
+                    loginBtn.style.display = 'block';
+                    mostrarErro('Usuário ou senha incorretos!');
+                }
+            }, 1500);
+        });
+
+        // Função para mostrar erro
+        function mostrarErro(mensagem) {
+            const errorMsg = document.getElementById('errorMessage');
+            errorMsg.textContent = mensagem;
+            errorMsg.style.display = 'block';
+            
+            // Balançar o container
+            document.querySelector('.login-container').style.animation = 'shake 0.5s ease-in-out';
+            setTimeout(() => {
+                document.querySelector('.login-container').style.animation = '';
+            }, 500);
+        }
+
+        // Animação de shake para erro
+        const shakeStyle = document.createElement('style');
+        shakeStyle.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(shakeStyle);
+
+        // Carregar usuário salvo se existir
+        window.addEventListener('load', function() {
+            const usuarioSalvo = localStorage.getItem('usuarioSalvo');
+            if (usuarioSalvo) {
+                document.getElementById('usuario').value = usuarioSalvo;
+                document.getElementById('lembrar').checked = true;
+            }
+        });
+
+        verificarSessao();
+
+        // Adicionar suporte para Enter
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && (e.target.id === 'usuario' || e.target.id === 'senha')) {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

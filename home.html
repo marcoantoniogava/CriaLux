@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Problemas - Hospital</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Sistema de Gerenciamento de Problemas</h1>
+        
+        <div class="estatisticas">
+            <div class="stat-card">
+                <div class="stat-number" id="totalAreas">0</div>
+                <div class="stat-label">Total de Áreas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="areasOk">0</div>
+                <div class="stat-label">Áreas OK</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="areasProblema">0</div>
+                <div class="stat-label">Com Problemas</div>
+            </div>
+        </div>
+
+        <div class="areas-grid" id="areasGrid">
+            <!-- As áreas serão geradas dinamicamente aqui -->
+        </div>
+    </div>
+
+    <!-- Modal para registrar/visualizar problema -->
+    <div id="modalProblema" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Registrar Problema</h2>
+            
+            <div id="formContainer">
+                <form id="problemaForm">
+                    <div class="form-group">
+                        <label>Área:</label>
+                        <input type="text" id="areaName" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prioridade">Prioridade:</label>
+                        <select id="prioridade" required>
+                            <option value="">Selecione a prioridade</option>
+                            <option value="baixa">Baixa</option>
+                            <option value="media">Média</option>
+                            <option value="alta">Alta</option>
+                            <option value="urgente">Urgente</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="descricao">Descrição do Problema:</label>
+                        <textarea id="descricao" placeholder="Descreva detalhadamente o problema encontrado..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reportadoPor">Reportado por:</label>
+                        <input type="text" id="reportadoPor" placeholder="Seu nome" required>
+                    </div>
+                    
+                    <button type="submit" class="btn">Registrar Problema</button>
+                    <button type="button" class="btn btn-cancelar" onclick="fecharModal()">Cancelar</button>
+                </form>
+            </div>
+            
+            <div id="problemaView" style="display: none;">
+                <div id="problemaDetalhes"></div>
+                <button type="button" class="btn btn-resolver" onclick="resolverProblema()">Marcar como Resolvido</button>
+                <button type="button" class="btn btn-cancelar" onclick="fecharModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados das áreas do hospital
+        const areas = [
+            { id: 1, nome: 'Cirurgia', icon: '🏥' },
+            { id: 2, nome: 'UTI', icon: '🚨' },
+            { id: 3, nome: 'Emergência', icon: '🚑' },
+            { id: 4, nome: 'Limpeza', icon: '🧹' },
+            { id: 5, nome: 'Setor de Compras', icon: '🛒' },
+            { id: 6, nome: 'Farmácia', icon: '💊' },
+            { id: 7, nome: 'Laboratório', icon: '🔬' },
+            { id: 8, nome: 'Radiologia', icon: '📡' },
+            { id: 9, nome: 'Manutenção', icon: '🔧' },
+            { id: 10, nome: 'Recepção', icon: '📋' },
+            { id: 11, nome: 'Pediatria', icon: '👶' },
+            { id: 12, nome: 'Cardiologia', icon: '❤️' }
+        ];
+
+        let problemas = {};
+        let areaAtual = null;
+
+        // Inicializar sistema
+        function init() {
+            carregarProblemas();
+            renderizarAreas();
+            atualizarEstatisticas();
+        }
+
+        // Carregar problemas do armazenamento local
+        function carregarProblemas() {
+            const problemasStorage = JSON.parse(localStorage.getItem('problemasHospital') || '{}');
+            problemas = problemasStorage;
+        }
+
+        // Salvar problemas no armazenamento local
+        function salvarProblemas() {
+            localStorage.setItem('problemasHospital', JSON.stringify(problemas));
+        }
+
+        // Renderizar cards das áreas
+        function renderizarAreas() {
+            const grid = document.getElementById('areasGrid');
+            grid.innerHTML = '';
+
+            areas.forEach(area => {
+                const problema = problemas[area.id];
+                const temProblema = problema && !problema.resolvido;
+                
+                const card = document.createElement('div');
+                card.className = `area-card ${temProblema ? 'problema' : ''}`;
+                card.onclick = () => abrirModal(area);
+                
+                let conteudoProblema = '';
+                if (temProblema) {
+                    conteudoProblema = `
+                        <div class="problema-info">
+                            <div class="problema-data">${formatarData(problema.data)}</div>
+                            <div class="problema-descricao">
+                                <strong>Prioridade:</strong> ${problema.prioridade.charAt(0).toUpperCase() + problema.prioridade.slice(1)}<br>
+                                <strong>Problema:</strong> ${problema.descricao.substring(0, 100)}${problema.descricao.length > 100 ? '...' : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="area-title">${area.icon} ${area.nome}</div>
+                    <span class="area-status ${temProblema ? 'status-problema' : 'status-ok'}">
+                        ${temProblema ? '⚠️ Problema Ativo' : '✅ Funcionando'}
+                    </span>
+                    ${conteudoProblema}
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Atualizar estatísticas
+        function atualizarEstatisticas() {
+            const totalAreas = areas.length;
+            const areasComProblema = Object.values(problemas).filter(p => !p.resolvido).length;
+            const areasOk = totalAreas - areasComProblema;
+
+            document.getElementById('totalAreas').textContent = totalAreas;
+            document.getElementById('areasOk').textContent = areasOk;
+            document.getElementById('areasProblema').textContent = areasComProblema;
+        }
+
+        // Abrir modal
+        function abrirModal(area) {
+            areaAtual = area;
+            const modal = document.getElementById('modalProblema');
+            const problema = problemas[area.id];
+            const temProblema = problema && !problema.resolvido;
+
+            document.getElementById('areaName').value = area.nome;
+
+            if (temProblema) {
+                // Mostrar problema existente
+                document.getElementById('modalTitle').textContent = `Problema em ${area.nome}`;
+                document.getElementById('formContainer').style.display = 'none';
+                document.getElementById('problemaView').style.display = 'block';
+                
+                document.getElementById('problemaDetalhes').innerHTML = `
+                    <div class="problema-info">
+                        <div class="problema-data"><strong>Reportado em:</strong> ${formatarData(problema.data)}</div>
+                        <div style="margin: 15px 0;">
+                            <strong>Prioridade:</strong> 
+                            <span style="color: ${getPrioridadeCor(problema.prioridade)}">
+                                ${problema.prioridade.charAt(0).toUpperCase() + problema.prioridade.slice(1)}
+                            </span>
+                        </div>
+                        <div style="margin: 15px 0;"><strong>Reportado por:</strong> ${problema.reportadoPor}</div>
+                        <div style="margin: 15px 0;"><strong>Descrição:</strong></div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545;">
+                            ${problema.descricao}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Mostrar formulário para novo problema
+                document.getElementById('modalTitle').textContent = `Registrar Problema - ${area.nome}`;
+                document.getElementById('formContainer').style.display = 'block';
+                document.getElementById('problemaView').style.display = 'none';
+                document.getElementById('problemaForm').reset();
+                document.getElementById('areaName').value = area.nome;
+            }
+
+            modal.style.display = 'block';
+        }
+
+        // Fechar modal
+        function fecharModal() {
+            document.getElementById('modalProblema').style.display = 'none';
+            areaAtual = null;
+        }
+
+        // Resolver problema
+        function resolverProblema() {
+            if (areaAtual && problemas[areaAtual.id]) {
+                problemas[areaAtual.id].resolvido = true;
+                problemas[areaAtual.id].dataResolucao = new Date().toISOString();
+                salvarProblemas();
+                renderizarAreas();
+                atualizarEstatisticas();
+                fecharModal();
+            }
+        }
+
+        // Formatjar data
+        function formatarData(dataISO) {
+            const data = new Date(dataISO);
+            return data.toLocaleString('pt-BR');
+        }
+
+        // Obter cor da prioridade
+        function getPrioridadeCor(prioridade) {
+            const cores = {
+                'baixa': '#28a745',
+                'media': '#ffc107',
+                'alta': '#fd7e14',
+                'urgente': '#dc3545'
+            };
+            return cores[prioridade] || '#6c757d';
+        }
+
+        // Event listeners
+        document.getElementById('problemaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!areaAtual) return;
+
+            const problema = {
+                descricao: document.getElementById('descricao').value,
+                prioridade: document.getElementById('prioridade').value,
+                reportadoPor: document.getElementById('reportadoPor').value,
+                data: new Date().toISOString(),
+                resolvido: false
+            };
+
+            problemas[areaAtual.id] = problema;
+            salvarProblemas();
+            renderizarAreas();
+            atualizarEstatisticas();
+            fecharModal();
+        });
+
+        // Fechar modal ao clicar no X ou fora do modal
+        document.querySelector('.close').onclick = fecharModal;
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalProblema');
+            if (event.target === modal) {
+                fecharModal();
+            }
+        };
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

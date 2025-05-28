@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema Hospitalar</title>
+    <title>Login - Hive Stock</title>
     <link rel="stylesheet" href="stylelogin.css">
 </head>
 <body>
     <div class="login-container">
         <div class="hospital-icon">
-            <span class="icon">🏥</span>
-            <div class="hospital-name">Sistema Hospitalar</div>
+            <img src="logohivestock.png" alt="Hospital Icon" class="hospital-image">
             <div class="hospital-subtitle">Gerenciamento de Problemas</div>
         </div>
 
@@ -59,8 +58,6 @@
 
     <script>
         const credenciais = {
-            'Enfermeiro': 'enf123',
-            'Medico': 'med123',
             'Suporte': 'sup123',
             'Gerente': 'ger123'
         };
@@ -151,8 +148,6 @@
                 document.getElementById('lembrar').checked = true;
             }
         });
-
-        verificarSessao();
 
         // Adicionar suporte para Enter
         document.addEventListener('keypress', function(e) {
